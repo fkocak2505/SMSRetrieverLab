@@ -5,7 +5,8 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.auth.api.phone.SmsRetriever
 import com.google.android.gms.common.api.CommonStatusCodes
@@ -20,15 +21,13 @@ fun SmsRetrieverUserConsentBroadcast(
 ) {
     val context = LocalContext.current
 
-    var shouldRegisterReceiver by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isRestartReciever.value) {
         Logger.d("Initializing Sms Retriever client")
         SmsRetriever.getClient(context)
             .startSmsUserConsent(null)
             .addOnSuccessListener {
                 Logger.d("SmsRetriever started successfully")
-                shouldRegisterReceiver = true
+                shouldRegisterReceiver.value = true
             }
     }
 
@@ -43,13 +42,12 @@ fun SmsRetrieverUserConsentBroadcast(
 
                     onSmsReceived(message, verificationCode)
                 }
-                shouldRegisterReceiver = false
             } else {
                 Logger.d("Consent denied. User can type OTC manually.")
             }
         }
 
-    if (shouldRegisterReceiver) {
+    if (shouldRegisterReceiver.value) {
         SystemBroadcastReceiver(
             systemAction = SmsRetriever.SMS_RETRIEVED_ACTION
         ) { intent ->
